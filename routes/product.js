@@ -1,9 +1,11 @@
 import express from "express"
 const router = express.Router()
-import { CreateProduct, getProduct, searchProduct } from "../controller/product.js"
+import { CreateProduct, getProductID, searchProduct,getProduct } from "../controller/product.js"
+
+router.get("/product", getProduct)
+router.get("/product/:count", getProductID)
+router.post("/product/search", searchProduct)
 
 router.post("/product", CreateProduct)
-router.get("/product/:count", getProduct)
-router.post("/product/search", searchProduct)
 
 export default router
