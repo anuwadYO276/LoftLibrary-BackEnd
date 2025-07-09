@@ -6,9 +6,12 @@ import morgan from "morgan";
 import cors from "cors";
 import { readdirSync } from "fs";
 import basicAuth from "basic-auth";
+import authRoutes from './routes/auth.js';
+import productRoutes from './routes/product.js';
+import loginRoutes from './routes/login.js';
+import profileRoutes from './routes/profile.js';
 
 const app = express();
-
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(cors());
@@ -30,10 +33,14 @@ const authMiddleware = (req, res, next) => {
 
 app.use(authMiddleware);
 
-readdirSync("./routes").forEach(async (r) => {
-  const route = await import(`./routes/${r}`);
-  app.use("", route.default);
-});
+app.use('/signup', authRoutes);
+app.use('/login', loginRoutes);
+app.use('/profile', profileRoutes);
+app.use('/product', productRoutes);
+// readdirSync("./routes").forEach(async (r) => {
+//   const route = await import(`./routes/${r}`);
+//   app.use("", route.default);
+// });
 
 app.listen(process.env.PORT || 3000, () =>
   console.log("server is running")
