@@ -9,11 +9,11 @@ import {
     , signupWriterFacebook
 } from "../controller/auth.js"
 
-router.post("/signup/reader", signupReader)
-router.post("/signup/writer", signupWriter)
-router.post("/signup/reader_google", signupReaderGoogle)
-router.post("/signup/reader_facebook", signupReaderFacebook)
-router.post("/signup/writer_google", signupWriterGoogle)
-router.post("/signup/writer_facebook", signupWriterFacebook)
+router.post("/reader", signupReader)
+router.post("/writer", signupWriter)
+router.post("/reader_google", signupReaderGoogle)
+router.post("/reader_facebook", signupReaderFacebook)
+router.post("/writer_google", signupWriterGoogle)
+router.post("/writer_facebook", signupWriterFacebook)
 
 export default router
