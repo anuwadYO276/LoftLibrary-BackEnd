@@ -18,7 +18,7 @@ export const signupReader = async (req, res) => {
             return res.status(400).json(set_res)
         }
 
-        const [reader] = await db.query(constant.getUserByemail, [email, username])
+        const [reader] = await db.query(constant.getUserByemail, [email])
         if(reader.length > 0){
             logger.error(`❌ User already exists: ${email}`);
             let set_res = {
@@ -64,7 +64,7 @@ export const signupWriter = async (req, res) => {
             return res.status(400).json(set_res)
         }
 
-        const [writer] = await db.query(constant.getUserByemail, [email, username, pen_name])
+        const [writer] = await db.query(constant.getUserByemail, [email])
         if(writer.length > 0){
 
             logger.error(`❌ User already exists: ${email}`);
@@ -346,7 +346,7 @@ export const login = async (req, res) => {
             return res.status(400).json(set_res);
         }
         
-        const [users] = await db.query(constant.getUserByemail,[Account, Account]);
+        const [users] = await db.query(constant.getUserByemail,[Account]);
         const user = users[0];
         console.log(user)
 
