@@ -44,6 +44,7 @@ CREATE TABLE chapters (
   content_text LONGTEXT,
   audio_url VARCHAR(255),
   release_date DATE,
+  status ENUM('draft', 'published', 'archived') NOT NULL DEFAULT 'draft',
   price INT DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
