@@ -1,11 +1,15 @@
 import express from "express"
 const router = express.Router()
-import { CreateProduct, getProductID, searchProduct,getProduct } from "../controller/product.js"
+
+import { getProduct, getProductID, searchProduct, CreateProduct, UpdateProduct } from "../controller/product.js"
+import { upload } from "../middlewares/multer.js" // 👈 import multer middleware
 
 router.get("/", getProduct)
 router.get("/:count", getProductID)
 router.post("/search", searchProduct)
 
-router.post("/", CreateProduct)
+// ⬇️ เพิ่ม upload.single("cover") เพื่อรับรูป
+router.post("/", upload.single("cover"), CreateProduct)
+router.put("/:id", upload.single("cover"), UpdateProduct)
 
 export default router
