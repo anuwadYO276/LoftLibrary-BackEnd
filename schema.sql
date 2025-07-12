@@ -28,27 +28,31 @@ CREATE TABLE books (
   cover_url VARCHAR(255),
   category VARCHAR(100),
   author_id INT NOT NULL,
-  price_per_chapter INT DEFAULT 1,
+  price_per_chapter INT DEFAULT 0,
   release_date DATE,
   status ENUM('draft', 'published', 'archived') NOT NULL DEFAULT 'draft',
+  is_complete, BOOLEAN DEFAULT FALSE,
+  score INT DEFAULT 0,
+  total_chapters INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 );
 
 
--- 3. Chapters table
-CREATE TABLE chapters (
+-- 3. Episode table
+CREATE TABLE episode (
   id INT AUTO_INCREMENT PRIMARY KEY,
   book_id INT NOT NULL,
   title VARCHAR(255),
   content_text LONGTEXT,
+  cover_url VARCHAR(255),
+  file_url VARCHAR(255),
   audio_url VARCHAR(255),
   release_date DATE,
   status ENUM('draft', 'published', 'archived') NOT NULL DEFAULT 'draft',
-  price INT DEFAULT 1,
+  price INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (book_id) REFERENCES books(id)
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- 4. Unlocks table

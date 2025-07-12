@@ -2,37 +2,56 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-// กำหนด path uploads แบบ absolute
-const uploadDir = path.resolve(process.cwd(), "uploads");
+const rootUploadDir = path.resolve(process.cwd(), "uploads");
 
-// สร้างโฟลเดอร์ uploads ถ้ายังไม่มี
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// ช่วยสร้างโฟลเดอร์ถ้ายังไม่มี
+function ensureDirExists(dir) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
 }
 
-// ตั้งค่าการเก็บไฟล์
+// กำหนด path เก็บไฟล์ตามเส้นทาง API
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadDir); // ใช้ path absolute
+    let destFolder = "others"; // fallback
+
+    const url = req.originalUrl;
+ 
+    if (url.includes("/product")) {
+      destFolder = "book_covers";
+    } else if (url.includes("/episode")) {
+        if (file.fieldname === "audio") {
+          destFolder = "episode_audio";
+        } else if (file.fieldname === "file") {
+          destFolder = "episode_documents"; // เก็บ PDF
+        } else {
+          destFolder = "episode_images";
+        }
+    }
+
+    const uploadPath = path.join(rootUploadDir, destFolder);
+    ensureDirExists(uploadPath);
+    cb(null, uploadPath);
   },
+
   filename: (req, file, cb) => {
-    const authorId = req.body.author_id || "unknown";
+    const userId = req.body.author_id || req.body.user_id || "unknown";
     const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
     const ext = path.extname(file.originalname);
-    const filename = `${authorId}_${timestamp}${ext}`;
+    const filename = `${userId}_${timestamp}${ext}`;
     cb(null, filename);
   }
 });
 
-// กรองเฉพาะ .jpg, .png
+// รองรับ .jpg, .png, .mp3
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ["image/jpeg", "image/png"];
+  const allowedTypes = ["image/jpeg", "image/png", "audio/mpeg", "audio/mp3", "application/pdf"];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error("Only .jpg and .png files are allowed"));
+    cb(new Error("Only JPG, PNG, MP3, and PDF files are allowed"));
   }
 };
 
-// สร้างและ export multer instance
 export const upload = multer({ storage, fileFilter });

@@ -11,6 +11,8 @@ import authRoutes from "./routes/auth.js"
 import productRoutes from "./routes/product.js"
 import loginRoutes from "./routes/login.js"
 import profileRoutes from "./routes/profile.js"
+import episodeRoutes from "./routes/episode.js"
+import e from "express"
 
 const app = express()
 
@@ -44,6 +46,8 @@ app.use("/signup", authRoutes)
 app.use("/login", loginRoutes)
 app.use("/profile", profileRoutes)
 app.use("/product", productRoutes)
+app.use("/episode", episodeRoutes)
+
 
 // Start server
 app.listen(process.env.PORT || 3000, () => {
