@@ -196,35 +196,102 @@ export const getProductID = async (req, res) => {
   }
 };
 
+// export const getProduct = async (req, res) => {
+//   try {
+//     const { count } = req.query;
+//     const limit = count ? parseInt(count) : 10; // default 10
+//     if (isNaN(limit) || limit <= 0) {
+//       let set_res = {
+//         statusCode: 400,
+//         message: "Invalid count parameter",
+//         data: null
+//       };
+//       return res.status(400).json(set_res);
+//     }
+//     const [products] = await db.query(constantBook.getProduct, [limit]);
+
+//     let set_res = {
+//       statusCode: 200,
+//       message: "Products fetched successfully",
+//       data: products
+//     };
+//     logger.info(`✅ Fetched ${products.length} products`);
+//     return res.status(200).json(set_res);
+//   } catch (err) {
+//     let set_res = {
+//       statusCode: 500,
+//       message: "Server error",
+//       data: err.message
+//     };
+//     logger.error(`❌ Failed to fetch products: ${err.message}`);
+//     return res.status(500).json(set_res);
+//   }
+// };
+
+
 export const getProduct = async (req, res) => {
   try {
-    const { count } = req.query;
-    const limit = count ? parseInt(count) : 10; // default 10
-    if (isNaN(limit) || limit <= 0) {
-      let set_res = {
-        statusCode: 400,
-        message: "Invalid count parameter",
-        data: null
-      };
-      return res.status(400).json(set_res);
-    }
-    const [products] = await db.query(constantBook.getProduct, [limit]);
+    const { category, page = 1, limit = 10, search = "" } = req.query; // เพิ่ม search
 
-    let set_res = {
+    const parsedLimit = parseInt(limit);
+    const parsedPage = parseInt(page);
+    const offset = (parsedPage - 1) * parsedLimit;
+
+    if (isNaN(parsedLimit) || parsedLimit <= 0 || isNaN(parsedPage) || parsedPage <= 0) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: "Invalid page or limit parameter",
+        data: null,
+      });
+    }
+
+    let baseQuery = `SELECT * FROM books`;
+    let countQuery = `SELECT COUNT(*) as total FROM books`;
+    let whereClauses = [];
+    let queryParams = [];
+
+    if (category) {
+      whereClauses.push(`category LIKE ?`);
+      queryParams.push(`%${category}%`);
+    }
+
+    if (search) {
+      whereClauses.push(`title LIKE ?`);  // สมมติว่าค้นหาจากฟิลด์ title
+      queryParams.push(`%${search}%`);
+    }
+
+    const whereClause = whereClauses.length > 0 ? ` WHERE ` + whereClauses.join(" AND ") : "";
+
+    // Count total items
+    const [countResult] = await db.query(countQuery + whereClause, queryParams);
+    const totalItems = countResult[0]?.total || 0;
+
+    // Fetch books with limit and offset
+    const [products] = await db.query(
+      `${baseQuery}${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      [...queryParams, parsedLimit, offset]
+    );
+
+    const response = {
       statusCode: 200,
       message: "Products fetched successfully",
-      data: products
+      data: products,
+      pagination: {
+        current_page: parsedPage,
+        total_pages: Math.ceil(totalItems / parsedLimit),
+        total_items: totalItems,
+      },
     };
-    logger.info(`✅ Fetched ${products.length} products`);
-    return res.status(200).json(set_res);
+
+    logger.info(`✅ Fetched ${products.length} products (page ${parsedPage})`);
+    return res.status(200).json(response);
   } catch (err) {
-    let set_res = {
+    logger.error(`❌ Failed to fetch products: ${err.message}`);
+    return res.status(500).json({
       statusCode: 500,
       message: "Server error",
-      data: err.message
-    };
-    logger.error(`❌ Failed to fetch products: ${err.message}`);
-    return res.status(500).json(set_res);
+      data: err.message,
+    });
   }
 };
 

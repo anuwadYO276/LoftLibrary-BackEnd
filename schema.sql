@@ -31,11 +31,11 @@ CREATE TABLE books (
   price_per_chapter INT DEFAULT 0,
   release_date DATE,
   status ENUM('draft', 'published', 'archived') NOT NULL DEFAULT 'draft',
-  is_complete, BOOLEAN DEFAULT FALSE,
-  score INT DEFAULT 0,
+  is_complete BOOLEAN DEFAULT FALSE,
+  score float DEFAULT 0,
   total_chapters INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 
