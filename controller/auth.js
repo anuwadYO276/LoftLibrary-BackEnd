@@ -20,12 +20,12 @@ export const signup = async (req, res) => {
 
         const [reader] = await db.query(constant.getUserByemail, [email])
         if(reader.length > 0){
-            logger.error(`❌ User already exists: ${email}`, JSON.stringify(set_res));
             let set_res = {
               statusCode: 400,
               message: "User already exists",
               data: null
             }
+            logger.error(`❌ User already exists: ${email}`, JSON.stringify(set_res));
             return res.status(400).json(set_res)
         }
 
