@@ -1,10 +1,13 @@
 import express from "express"
 const router = express.Router()
 import { 
-     updateUserProfile
-     , updatePenName
-} from "../controller/auth.js"
+    setNickname,
+    updateProfile,
+    getUserProfile
+} from "../controller/profile.js"
 
-router.post("/update-profile", updateUserProfile)
-router.post("/pen-name", updatePenName)
+router.post("/nickname", setNickname);
+router.put("/", updateProfile);
+router.get("/", getUserProfile);
+
 export default router
