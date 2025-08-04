@@ -1,10 +1,14 @@
 import express from "express"
 const router = express.Router()
 import { 
-     updateUserProfile
-     , updatePenName
-} from "../controller/auth.js"
+     getTransactionBookHistoryPurchase
+     , getTransactionEpisodeHistoryPurchase
+     , updateFavorites
+     , getUserFavorites
+} from "../controller/user.js"
 
-router.post("/update-profile", updateUserProfile)
-router.post("/pen-name", updatePenName)
+router.post("/book", getTransactionBookHistoryPurchase);
+router.post("/episode", getTransactionEpisodeHistoryPurchase);
+router.post("/favorites", updateFavorites);
+router.get("/:id", getUserFavorites);
 export default router

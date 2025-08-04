@@ -9,11 +9,11 @@ import basicAuth from "basic-auth"
 
 import authRoutes from "./routes/auth.js"
 import profileRoutes from "./routes/profile.js"
-import bookRoutes from "./routes/book.js"
-import episodeRoutes from "./routes/episode.js"
-import userRoutes from "./routes/user.js"
 import coinRoutes from "./routes/coin.js"
 import purchaseRoutes from "./routes/purchase.js"
+// import bookRoutes from "./routes/book.js"
+// import episodeRoutes from "./routes/episode.js"
+import userRoutes from "./routes/user.js"
 
 import e from "express"
 
@@ -47,11 +47,11 @@ app.use(authMiddleware)
 // routes
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
-app.use("/api/books", bookRoutes);
-app.use("/api/episodes", episodeRoutes);
-app.use("/api/user", userRoutes);
 app.use("/api/coins", coinRoutes);
 app.use("/api/purchases", purchaseRoutes);
+// app.use("/api/books", bookRoutes);
+// app.use("/api/episodes", episodeRoutes);
+app.use("/api/user", userRoutes);
 
 
 

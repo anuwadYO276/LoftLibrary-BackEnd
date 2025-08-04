@@ -6,6 +6,7 @@ CREATE TABLE users (
   pen_name VARCHAR(100),
   role ENUM('user', 'admin') DEFAULT 'user',
   status ENUM('active', 'inactive') DEFAULT 'active',
+  avatar VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -53,6 +54,7 @@ CREATE TABLE favorites (
 CREATE TABLE purchases (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT,
+  book_id INT,
   episode_id INT,
   purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
