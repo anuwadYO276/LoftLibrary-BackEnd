@@ -1,163 +1,92 @@
-import db from "../lib/db.js";
-import constantEpisode  from "../lib/constant_episode.js";
+import db from "../lib/db.js"
+import constantEpisode from "../lib/constantEpisode.js"
+import bcrypt from "bcryptjs"
+import jwt from "jsonwebtoken"
 import logger from '../utils/logger.js';
-import e from "express";
+import ApiResponse from '../utils/response.js';
 
+// CREATE TABLE episodes (
+//   id INT AUTO_INCREMENT PRIMARY KEY,
+//   book_id INT,
+//   user_id INT,
+//   title VARCHAR(255),
+//   content TEXT,
+//   is_free BOOLEAN DEFAULT FALSE,
+//   price INT DEFAULT 1,
+//   episodes_image VARCHAR(255),
+//   release_date DATE,
+//   status ENUM('draft', 'published', 'archived') NOT NULL DEFAULT 'draft',
+//   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+// );
 export const getEpisodeProduct = async (req, res) => {
-  try {
-    const { product } = req.params;
-    const [result] = await db.query(constantEpisode.GetEpisodesByBookId, [product]);
-
-    if (result.length === 0) {
-        let set_res = {
-            statusCode: 404,
-            message: "No episodes found for this product.",
-            data: null
-        }
-      return res.status(404).json(set_res);
+    try {
+        const { BookId } = req.params;
+        const [rows] = await db.query(constantEpisode.getEpisodeByBookIdQuery, [BookId]);
+        return ApiResponse.success(res, rows, 200, 'Episodes retrieved successfully');
+    } catch (error) {
+        logger.error("Error fetching episodes:", error);
+        return ApiResponse.error(res, "Failed to fetch episodes", 500, 'error');
     }
-
-    let set_res = {
-      statusCode: 200,
-      message: "Episodes fetched successfully.",
-      data: result
-    }
-    res.json(set_res);
-
-  } catch (error) {
-    let set_res = {
-      statusCode: 500,
-      message: "Internal server error.",
-      data: null
-    }
-    logger.error("Error fetching episodes:", error);
-    res.status(500).json(set_res);
-  }
 }
+
 export const getEpisodeID = async (req, res) => {
-  try {
-    const { product, count } = req.params;
-    
-    const [rows] = await db.query(constantEpisode.GetEpisodesByBookIdWithLimit, [product, count]);
-
-    if (rows.length === 0) {
-        let set_res = {
-            statusCode: 404,
-            message: "No episodes found for this product.",
-            data: null
+    try {
+        const { BookId, EpisodeId } = req.params;
+        const [rows] = await db.query(constantEpisode.getEpisodeByIdQuery, [BookId, EpisodeId]);
+        if (rows.length === 0) {
+            return ApiResponse.error(res, "Episode not found", 404, 'error');
         }
-      return res.status(404).json(set_res);
+        return ApiResponse.success(res, rows[0], 200, 'Episode retrieved successfully');
+    } catch (error) {
+        logger.error("Error fetching episode by ID:", error);
+        return ApiResponse.error(res, "Failed to fetch episode", 500, 'error');
     }
-
-    let set_res = {
-      statusCode: 200,
-      message: "Episodes fetched successfully.",
-      data: rows
-    }
-    res.json(set_res);
-  } catch (error) {
-    let set_res = {
-      statusCode: 500,
-      message: "Internal server error.",
-      data: null
-    }
-    logger.error("Error fetching episodes by ID:", error);
-    res.status(500).json(set_res);
-  }
 }
+
 export const CreateEpisode = async (req, res) => {
     try {
-        const { title, content_text, book_id, release_date, status, price } = req.body;
-        const cover_url = req.files.cover ? `/uploads/episode_images/${req.files.cover[0].filename}` : null;
-        const audio_url = req.files.audio ? `/uploads/episode_audio/${req.files.audio[0].filename}` : null;
-        const file_url = req.files.file ? `/uploads/episode_documents/${req.files.file[0].filename}` : null;
+        const { book_id, title, description } = req.body;
+        const episodeFile = req.files['episodes'][0];
 
-        const [result] = await db.query(constantEpisode.CreateEpisode, [
-            book_id, title, content_text, cover_url, audio_url, file_url, release_date, status, price
-        ]);
-        if (result.affectedRows === 0) {
-            let set_res = {
-                statusCode: 400,
-                message: "Failed to create episode.",
-                data: null
-            }
-            return res.status(400).json(set_res);
+        if (!episodeFile) {
+            return ApiResponse.error(res, "Episode file is required", 400, 'error');
         }
-        let set_res = {
-            statusCode: 201,
-            message: "Episode created successfully.",
-            data: { id: result.insertId }
-        }
-        res.status(201).json(set_res);
+
+        const episodesFile = req.files?.episodes?.[0];
+        const episodes = episodesFile ? episodesFile.filename : user[0].episodes;
+
+        const query = constantEpisode.addEpisodeQuery;
+        const values = [book_id, title, description, episodes.filename];
+        const [result] = await db.query(query, values);
+
+        return ApiResponse.success(res, { id: result.insertId, message: "Episode created successfully" }, 201, 'success');
     } catch (error) {
-        let set_res = {
-            statusCode: 500,
-            message: "Internal server error.",
-            data: null
-        }
         logger.error("Error creating episode:", error);
-        res.status(500).json(set_res);
+        return ApiResponse.error(res, "Failed to create episode", 500, 'error');
     }
 }
+
 export const UpdateEpisode = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      title,
-      content_text,
-      book_id,
-      release_date,
-      status,
-      price,
-      cover_url: bodyCoverUrl,
-      file_url: bodyFileUrl,
-      audio_url: bodyAudioUrl,
-    } = req.body;
+    try {
+        const { EpisodeId } = req.params;
+        const { title, description } = req.body;
+        const episodeFile = req.files['episodes'] ? req.files['episodes'][0] : null;
 
-    const cover_url = req.files?.cover
-      ? `/uploads/episode_images/${req.files.cover[0].filename}`
-      : bodyCoverUrl || null;
+        if (!episodeFile) {
+            return ApiResponse.error(res, "Episode file is required", 400, 'error');
+        }
 
-    const audio_url = req.files?.audio
-      ? `/uploads/episode_audio/${req.files.audio[0].filename}`
-      : bodyAudioUrl || null;
+        const episodesFile = req.files?.episodes?.[0];
+        const episodes = episodesFile ? episodesFile.filename : user[0].episodes;
+        
+        const query = constantEpisode.updateEpisodeQuery;
+        const values = [title, description, episodes.filename, EpisodeId];
+        await db.query(query, values);
 
-    const file_url = req.files?.file
-      ? `/uploads/episode_documents/${req.files.file[0].filename}`
-      : bodyFileUrl || null;
-
-    const [result] = await db.query(constantEpisode.UpdateEpisode, [
-      book_id,
-      title,
-      content_text,
-      cover_url,
-      audio_url,
-      file_url,
-      release_date,
-      status,
-      price,
-      id,
-    ]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({
-        statusCode: 404,
-        message: "Episode not found or no changes made.",
-        data: null,
-      });
+        return ApiResponse.success(res, { message: "Episode updated successfully" }, 200, 'success');
+    } catch (error) {
+        logger.error("Error updating episode:", error);
+        return ApiResponse.error(res, "Failed to update episode", 500, 'error');
     }
+}
 
-    return res.status(200).json({
-      statusCode: 200,
-      message: "Episode updated successfully.",
-      data: result,
-    });
-  } catch (error) {
-    logger.error("Error updating episode:", error);
-    return res.status(500).json({
-      statusCode: 500,
-      message: "Internal server error.",
-      data: error.message,
-    });
-  }
-};

@@ -1,25 +1,18 @@
 import express from "express"
 const router = express.Router()
 
-import { getProduct
-        , getProductID
-        , searchProduct
-        , CreateProduct
-        , UpdateProduct
-        , UpdateIsComplete
-        , UpdateFollowers
-    } from "../controller/product.js"
+import { addRate
+        , searchBooks
+        , updateBooks
+        , getBookMy
+        , updateBookComplete
+    } from "../controller/book.js"
 import { upload } from "../middlewares/multer.js" // 👈 import multer middleware
 
-router.get("/", getProduct)
-router.get("/:count", getProductID)
-router.post("/search", searchProduct)
-
-// ⬇️ เพิ่ม upload.single("cover") เพื่อรับรูป
-router.post("/", upload.single("cover"), CreateProduct)
-router.put("/:id", upload.single("cover"), UpdateProduct)
-router.put("/:id/status", UpdateIsComplete)
-
-router.post("/follow", UpdateFollowers)
+router.post("/rate", addRate)
+router.post("/search", searchBooks)
+router.post('/', upload.fields([{ name: 'books', maxCount: 1 }]), updateBooks)
+router.post("/book-My", getBookMy)
+router.post("/is_complete", updateBookComplete)
 
 export default router
