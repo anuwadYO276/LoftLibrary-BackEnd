@@ -56,6 +56,7 @@ CREATE TABLE purchases (
   user_id INT,
   book_id INT,
   episode_id INT,
+  amount INT,
   purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

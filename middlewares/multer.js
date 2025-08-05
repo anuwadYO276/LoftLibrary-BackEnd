@@ -32,7 +32,8 @@ const storage = multer.diskStorage({
   },
 
   filename: (req, file, cb) => {
-    const userId = req.body.userId || "unknown";
+    const EpisodeId = req.params.EpisodeId;
+    const userId = req.body.userId  || EpisodeId || "unknown";
     const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
     const ext = path.extname(file.originalname);
     const filename = `${userId}_${timestamp}${ext}`;

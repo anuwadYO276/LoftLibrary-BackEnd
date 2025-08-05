@@ -19,6 +19,14 @@ export const purchasesEpisode = async (req, res) => {
       return ApiResponse.error(res, 'Insufficient coins', 400, 'error');
     }
 
+    //เช็คก่อนว่าซื้อไปแล้วหรือยัง
+    const [purchaseRows] = await db.query(constantPurchase.checkPurchase, [userId, bookId, episodeId]);
+    if (purchaseRows.length > 0) {
+      return ApiResponse.error(res, 'Episode already purchased', 400, 'error');
+    }
+
+    // add coins transaction
+    await db.query(constantCoins.addCoinsEpisode, [userId, -amount, 'spend', `Purchased episode ${episodeId} of book ${bookId}`]);
     // Insert purchase record
     await db.query(constantPurchase.addPurchase, [userId, bookId, episodeId, amount]);
     return ApiResponse.success(res, null, 200, 'Purchase successful');

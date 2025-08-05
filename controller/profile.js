@@ -38,12 +38,15 @@ export const updateProfile = async (req, res) => {
         const avatarFile = req.files?.avatar?.[0];
         const avatar = avatarFile ? avatarFile.filename : user[0].avatar;
         await db.query(constantProfile.updateUserProfile, [username, avatar, role, userId]);
+
         return ApiResponse.success(res, null, 200, 'Profile updated successfully');
     } catch (err) {
         logger.error(`❌ Failed to update profile: ${err.message}`);
         return ApiResponse.error(res, 'Server error', 500, 'error');
     }
 };
+
+
 
 export const getUserProfile = async (req, res) => {
     try {

@@ -23,7 +23,7 @@ export const addRate = async (req, res) => {
     logger.error(`❌ Failed to add rating: ${err.message}`);
     return ApiResponse.error(res, 'Server error', 500, 'error');
   }
-}
+};
 
 export const searchBooks = async (req, res) => {
   try {
@@ -42,33 +42,49 @@ export const searchBooks = async (req, res) => {
     logger.error(`❌ Failed to search books: ${err.message}`);
     return ApiResponse.error(res, 'Server error', 500, 'error');
   }
-}
+};
 
 export const updateBooks = async (req, res) => {
   try {
     const { bookId, title, userId, description } = req.body;
-    if(bookId){
-        // update
-        if (!title || !userId || !description) {
-          return ApiResponse.error(res, 'Title, User ID and Description are required', 400, 'error');
+
+    if (!title || !userId || !description) {
+      return ApiResponse.error(res, 'Title, User ID and Description are required', 400, 'error');
+    }
+
+    const booksFile = req.files?.books?.[0];
+
+    if (bookId) {
+      // ✏️ กรณีแก้ไขหนังสือ
+      let books;
+
+      if (booksFile) {
+        books = booksFile.filename;
+      } else {
+        // ดึงชื่อไฟล์เดิมจากฐานข้อมูล
+        const [existing] = await db.query('SELECT cover_image FROM books WHERE id = ?', [bookId]);
+
+        if (existing.length === 0) {
+          return ApiResponse.error(res, 'Book not found', 404, 'error');
         }
-        const booksFile = req.files?.books?.[0];
-        const books = booksFile ? booksFile.filename : user[0].books;
-        await db.query(constantBook.updateBookQuery, [title, userId, description, books, bookId]);
-    }else{
-        // add new book
-        if (!title || !userId || !description) {
-          return ApiResponse.error(res, 'Title, User ID and Description are required', 400, 'error');
-        }
-        const booksFile = req.files?.books?.[0];
-        const books = booksFile ? booksFile.filename : null;
-        await db.query(constantBook.addBookQuery, [title, userId, description, books]);
+
+        books = existing[0].cover_image;
+      }
+
+      await db.query(constantBook.updateBookQuery, [title, userId, description, books, bookId]);
+      return ApiResponse.success(res, { message: 'Book updated successfully' }, 200, 'success');
+    } else {
+      // ➕ กรณีเพิ่มหนังสือใหม่
+      const books = booksFile ? booksFile.filename : null;
+      await db.query(constantBook.addBookQuery, [title, userId, description, books]);
+      return ApiResponse.success(res, { message: 'Book added successfully' }, 201, 'success');
     }
   } catch (err) {
     logger.error(`❌ Failed to update book: ${err.message}`);
     return ApiResponse.error(res, 'Server error', 500, 'error');
   }
-}
+};
+
 export const getBookMy = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -86,6 +102,7 @@ export const getBookMy = async (req, res) => {
     return ApiResponse.error(res, 'Server error', 500, 'error');
   }
 };
+
 export const updateBookComplete = async (req, res) => {
   try {
     const { bookId, isComplete } = req.body;
@@ -98,4 +115,4 @@ export const updateBookComplete = async (req, res) => {
     logger.error(`❌ Failed to update book completion status: ${err.message}`);
     return ApiResponse.error(res, 'Server error', 500, 'error');
   }
-}
+};

@@ -70,17 +70,26 @@ export const UpdateEpisode = async (req, res) => {
     try {
         const { EpisodeId } = req.params;
         const { title, description } = req.body;
-        const episodeFile = req.files['episodes'] ? req.files['episodes'][0] : null;
+        const episodeFile = req.files?.['episodes']?.[0];
 
-        if (!episodeFile) {
-            return ApiResponse.error(res, "Episode file is required", 400, 'error');
+        let episodes;
+
+        if (episodeFile) {
+            // ถ้ามีไฟล์แนบมา ใช้ไฟล์ใหม่
+            episodes = episodeFile.filename;
+        } else {
+            // ถ้าไม่มีไฟล์แนบมา ดึงชื่อไฟล์เดิมจากฐานข้อมูล
+            const [existing] = await db.query('SELECT episodes_image FROM episodes WHERE id = ?', [EpisodeId]);
+
+            if (existing.length === 0) {
+                return ApiResponse.error(res, "Episode not found", 404, 'error');
+            }
+
+            episodes = existing[0].episodes_image;
         }
 
-        const episodesFile = req.files?.episodes?.[0];
-        const episodes = episodesFile ? episodesFile.filename : user[0].episodes;
-        
         const query = constantEpisode.updateEpisodeQuery;
-        const values = [title, description, episodes.filename, EpisodeId];
+        const values = [title, description, episodes, EpisodeId];
         await db.query(query, values);
 
         return ApiResponse.success(res, { message: "Episode updated successfully" }, 200, 'success');
@@ -88,5 +97,5 @@ export const UpdateEpisode = async (req, res) => {
         logger.error("Error updating episode:", error);
         return ApiResponse.error(res, "Failed to update episode", 500, 'error');
     }
-}
+};
 
