@@ -10,7 +10,7 @@ import { addRate
 import { upload } from "../middlewares/multer.js" // 👈 import multer middleware
 
 router.post("/rate", addRate)
-router.post("/search", searchBooks)
+router.get("/", searchBooks)
 router.post('/', upload.fields([{ name: 'books', maxCount: 1 }]), updateBooks)
 router.post("/book-My", getBookMy)
 router.post("/is_complete", updateBookComplete)

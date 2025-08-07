@@ -14,6 +14,7 @@ import purchaseRoutes from "./routes/purchase.js"
 import userRoutes from "./routes/user.js"
 import bookRoutes from "./routes/book.js"
 import episodeRoutes from "./routes/episode.js"
+import devRoutes from "./routes/dev.js"
 
 import e from "express"
 
@@ -28,6 +29,7 @@ app.use("/uploads", express.static("uploads"))
 
 // Static assets (อื่น ๆ)
 app.use(express.static("public"))
+
 
 // Basic Auth middleware
 const authMiddleware = (req, res, next) => {
@@ -52,6 +54,7 @@ app.use("/api/purchases", purchaseRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/books", bookRoutes);
 app.use("/api/episodes", episodeRoutes);
+app.use("/api/dev", devRoutes);
 
 
 // Start server

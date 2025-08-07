@@ -27,20 +27,65 @@ export const addRate = async (req, res) => {
 
 export const searchBooks = async (req, res) => {
   try {
-    const { query } = req.body;
-    if (!query) {
-      return ApiResponse.error(res, 'Search query is required', 400, 'error');
+    const { category, page = 1, limit = 10, search = "" } = req.query;
+
+    const parsedLimit = parseInt(limit);
+    const parsedPage = parseInt(page);
+    const offset = (parsedPage - 1) * parsedLimit;
+
+    if (isNaN(parsedLimit) || parsedLimit <= 0 || isNaN(parsedPage) || parsedPage <= 0) {
+      return ApiResponse.error(res, "Invalid page or limit parameter", 400, "error");
     }
-    const searchKey = `%${query.toLowerCase()}%`;
-    const [rows] = await db.query(constantBook.searchBooksQuery, [searchKey]);
-    if (rows.length === 0) {
-      return ApiResponse.error(res, 'No books found', 404, 'error');
+
+    let baseQuery = `
+      SELECT DISTINCT b.*
+      FROM books b
+      LEFT JOIN book_categories bc ON b.id = bc.book_id
+      LEFT JOIN categories c ON bc.category_id = c.id
+    `;
+    let countQuery = `
+      SELECT COUNT(DISTINCT b.id) AS total
+      FROM books b
+      LEFT JOIN book_categories bc ON b.id = bc.book_id
+      LEFT JOIN categories c ON bc.category_id = c.id
+    `;
+
+    let whereClauses = [];
+    let queryParams = [];
+
+    if (category) {
+      whereClauses.push(`c.name LIKE ?`);
+      queryParams.push(`%${category}%`);
     }
-    
-    return ApiResponse.success(res, rows, 200, 'Books retrieved successfully');
+
+    if (search) {
+      whereClauses.push(`b.title LIKE ?`);
+      queryParams.push(`%${search}%`);
+    }
+
+    const whereClause = whereClauses.length > 0 ? ` WHERE ` + whereClauses.join(" AND ") : "";
+
+    const [countResult] = await db.query(countQuery + whereClause, queryParams);
+    const totalItems = countResult[0]?.total || 0;
+
+    const [books] = await db.query(
+      `${baseQuery}${whereClause} ORDER BY b.created_at DESC LIMIT ? OFFSET ?`,
+      [...queryParams, parsedLimit, offset]
+    );
+
+    const response = {
+      data: books,
+      pagination: {
+        current_page: parsedPage,
+        total_pages: Math.ceil(totalItems / parsedLimit),
+        total_items: totalItems,
+      },
+    };
+
+    return ApiResponse.success(res, response, 200, "Books fetched successfully");
   } catch (err) {
     logger.error(`❌ Failed to search books: ${err.message}`);
-    return ApiResponse.error(res, 'Server error', 500, 'error');
+    return ApiResponse.error(res, "Server error", 500, "error");
   }
 };
 
