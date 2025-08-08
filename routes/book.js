@@ -6,6 +6,7 @@ import { addRate
         , updateBooks
         , getBookMy
         , updateBookComplete
+        , searchBooksId
     } from "../controller/book.js"
 import { upload } from "../middlewares/multer.js" // 👈 import multer middleware
 
@@ -14,5 +15,6 @@ router.get("/", searchBooks)
 router.post('/', upload.fields([{ name: 'books', maxCount: 1 }]), updateBooks)
 router.post("/book-My", getBookMy)
 router.post("/is_complete", updateBookComplete)
+router.get("/:id", searchBooksId)
 
 export default router

@@ -91,10 +91,10 @@ export const searchBooks = async (req, res) => {
 
 export const updateBooks = async (req, res) => {
   try {
-    const { bookId, title, userId, description } = req.body;
+    const { bookId, title, userId, description, category } = req.body;
 
-    if (!title || !userId || !description) {
-      return ApiResponse.error(res, 'Title, User ID and Description are required', 400, 'error');
+    if (!title || !userId || !description || !category) {
+      return ApiResponse.error(res, 'Title, User ID, Description and Category are required', 400, 'error');
     }
 
     const booksFile = req.files?.books?.[0];
@@ -115,14 +115,35 @@ export const updateBooks = async (req, res) => {
 
         books = existing[0].cover_image;
       }
-
+      // อัปเดตหนังสือ category
+      await db.query('DELETE FROM book_categories WHERE book_id = ?', [bookId]);
+      // Horror,Scifi
+      const categoryIds = category.split(',').map(cat => cat.trim());
+      for (const catId of categoryIds) {
+        // เอาไปหาที่ categories ก่อน เพื่อเอา id ของ category
+        const [catResult] = await db.query('SELECT id FROM categories WHERE name = ?', [catId]);
+        if (catResult.length === 0) {
+          return ApiResponse.error(res, `Category ${catId} not found`, 404, 'error');
+        }
+        await db.query('INSERT INTO book_categories (book_id, category_id) VALUES (?, ?)', [bookId, catResult[0].id]);
+      }
       await db.query(constantBook.updateBookQuery, [title, userId, description, books, bookId]);
-      return ApiResponse.success(res, { message: 'Book updated successfully' }, 200, 'success');
+      return ApiResponse.success(res, { bookId: bookId }, 200, 'Book updated successfully');
     } else {
       // ➕ กรณีเพิ่มหนังสือใหม่
       const books = booksFile ? booksFile.filename : null;
-      await db.query(constantBook.addBookQuery, [title, userId, description, books]);
-      return ApiResponse.success(res, { message: 'Book added successfully' }, 201, 'success');
+      let bookDataId = await db.query(constantBook.addBookQuery, [title, userId, description, books]);
+      // เพิ่มหนังสือ category
+      const categoryIds = category.split(',').map(cat => cat.trim());
+      for (const catId of categoryIds) {
+        // เอาไปหาที่ categories ก่อน เพื่อเอา id ของ category
+        const [catResult] = await db.query('SELECT id FROM categories WHERE name = ?', [catId]);
+        if (catResult.length === 0) {
+          return ApiResponse.error(res, `Category ${catId} not found`, 404, 'error');
+        }
+       await db.query('INSERT INTO book_categories (book_id, category_id) VALUES (?, ?)', [bookDataId[0].insertId, catResult[0].id]);
+      }
+      return ApiResponse.success(res, { bookId: bookDataId[0].insertId }, 201, 'Book added successfully');
     }
   } catch (err) {
     logger.error(`❌ Failed to update book: ${err.message}`);
@@ -158,6 +179,29 @@ export const updateBookComplete = async (req, res) => {
     return ApiResponse.success(res, { message: 'Book completion status updated successfully' }, 200, 'success');
   } catch (err) {
     logger.error(`❌ Failed to update book completion status: ${err.message}`);
+    return ApiResponse.error(res, 'Server error', 500, 'error');
+  }
+};
+
+export const searchBooksId = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return ApiResponse.error(res, 'Book ID is required', 400, 'error');
+    }
+    
+    const [rows] = await db.query(constantBook.getBookByIdQuery, [id]);
+    if (rows.length === 0) {
+      return ApiResponse.error(res, 'Book not found', 404, 'error');
+    }
+    
+    // get category
+    const [categoryRows] = await db.query('SELECT c.id, c.name FROM categories c JOIN book_categories bc ON c.id = bc.category_id WHERE bc.book_id = ?', [id]);
+    rows[0].categories = categoryRows;
+
+    return ApiResponse.success(res, rows[0], 200, 'Book retrieved successfully');
+  } catch (err) {
+    logger.error(`❌ Failed to search book by ID: ${err.message}`);
     return ApiResponse.error(res, 'Server error', 500, 'error');
   }
 };
