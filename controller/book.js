@@ -10,14 +10,14 @@ export const addRate = async (req, res) => {
     if (!bookId || !userId || !rating) {
       return ApiResponse.error(res, 'Book ID, User ID and Rating are required', 400, 'error');
     }
-    const [existing] = await db.query(constantBook.getRatingQuery, [bookId, userId]);
-    
+    const [existing] = await db.query(constantBook.getRatingQuery, [userId, bookId]);
+
     if (existing.length > 0) {
       // delete existing rating
-        await db.query(constantBook.deleteRatingQuery, [bookId, userId]);
+        await db.query(constantBook.deleteRatingQuery, [userId, bookId]);
     }
     
-    await db.query(constantBook.addRatingQuery, [bookId, userId, rating, comment]);
+    await db.query(constantBook.addRatingQuery, [userId, bookId, rating, comment]);
     return ApiResponse.success(res, { message: 'Rating added successfully' }, 200, 'success');
   } catch (err) {
     logger.error(`❌ Failed to add rating: ${err.message}`);
@@ -199,12 +199,12 @@ export const updateBookComplete = async (req, res) => {
 
 export const searchBooksId = async (req, res) => {
   try {
-    const { id, userId } = req.params;
+    const { id } = req.params;
     if (!id) {
       return ApiResponse.error(res, 'Book ID is required', 400, 'error');
     }
 
-    const [rows] = await db.query(constantBook.getBookByIdQuery, [id, userId]);
+    const [rows] = await db.query(constantBook.getBookByIdQuery, [id]);
     if (rows.length === 0) {
       return ApiResponse.error(res, 'Book not found', 404, 'error');
     }
@@ -216,6 +216,25 @@ export const searchBooksId = async (req, res) => {
     return ApiResponse.success(res, rows[0], 200, 'Book retrieved successfully');
   } catch (err) {
     logger.error(`❌ Failed to search book by ID: ${err.message}`);
+    return ApiResponse.error(res, 'Server error', 500, 'error');
+  }
+};
+
+export const searchBooksIdIsFollowing = async (req, res) => {
+  try {
+    const { userId, bookId } = req.params;
+    if (!userId || !bookId) {
+      return ApiResponse.error(res, 'User ID and Book ID are required', 400, 'error');
+    }
+
+    const [rows] = await db.query('SELECT COUNT(*) AS isFollowing FROM favorites WHERE user_id = ? AND book_id = ?', [userId, bookId]);
+    // add get data ratings is user for book id
+    const [rowsRatings] = await db.query('SELECT SUM(rating) AS rating FROM ratings WHERE user_id = ? AND book_id = ?', [userId, bookId]);
+
+
+    return ApiResponse.success(res, { isFollowing: rows[0].isFollowing > 0, ratings: rowsRatings[0].rating ? rowsRatings[0].rating : 0 }, 200, 'Follow status retrieved successfully');
+  } catch (err) {
+    logger.error(`❌ Failed to check if user is following book: ${err.message}`);
     return ApiResponse.error(res, 'Server error', 500, 'error');
   }
 };

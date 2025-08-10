@@ -14,14 +14,13 @@ export const checkin = async (req, res) => {
 
     // 1. เช็คว่ามี check-in วันนี้หรือยัง
     const [rows] = await db.query(constantCoins.checkDataCheckins, [userId]);
-
     if (rows[0].count > 0) {
       return ApiResponse.error(res, 'You have already checked in today.', 400, 'error');
     }
 
     // 2. ถ้ายังไม่เคย check-in วันนี้ ให้ insert ข้อมูล check-in
-    await db.query(constantCoins.addDataCheckins, [userId]);
- 
+    const resCheckins  = await db.query(constantCoins.addDataCheckins, [userId]);
+    
     let Coins = 1;
     let type = 'daily_checkin';
     // 3. เพิ่มเหรียญ (coins) ให้ user

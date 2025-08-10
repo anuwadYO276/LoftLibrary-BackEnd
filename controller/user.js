@@ -62,21 +62,84 @@ export const updateFavorites = async (req, res) => {
   }
 }
 
+
 export const getUserFavorites = async (req, res) => {
   try {
-    const { id } = req.params;
-    if (!id) {
-      return ApiResponse.error(res, 'User ID is required', 400, 'error');
+    const { category, page = 1, limit = 10, search = "", userId } = req.query;
+
+    const parsedLimit = parseInt(limit, 10);
+    const parsedPage = parseInt(page, 10);
+    const offset = (parsedPage - 1) * parsedLimit;
+
+    if (!userId) {
+      return ApiResponse.error(res, "User ID is required", 400, "error");
     }
-    
-    const [rows] = await db.query(constantUser.getUserFavorites, [id]);
-    if (rows.length === 0) {
-      return ApiResponse.error(res, 'No favorites found', 404, 'error');
+
+    if (isNaN(parsedLimit) || parsedLimit <= 0 || isNaN(parsedPage) || parsedPage <= 0) {
+      return ApiResponse.error(res, "Invalid page or limit parameter", 400, "error");
     }
-    
-    return ApiResponse.success(res, rows, 200, 'Favorites retrieved successfully');
+
+    // ✅ Base query
+    let baseQuery = `
+      SELECT DISTINCT 
+          b.*, 
+          (SELECT COUNT(*) FROM ratings r WHERE r.book_id = b.id) AS rating_count,
+          (SELECT AVG(rating) FROM ratings r WHERE r.book_id = b.id) AS avg_rating
+      FROM books b
+      INNER JOIN favorites f ON b.id = f.book_id
+      LEFT JOIN book_categories bc ON b.id = bc.book_id
+      LEFT JOIN categories c ON bc.category_id = c.id
+    `;
+
+    let countQuery = `
+      SELECT COUNT(DISTINCT b.id) AS total
+      FROM books b
+      INNER JOIN favorites f ON b.id = f.book_id
+      LEFT JOIN book_categories bc ON b.id = bc.book_id
+      LEFT JOIN categories c ON bc.category_id = c.id
+    `;
+
+    // ✅ Conditions
+    let whereClauses = [`f.user_id = ?`];
+    let queryParams = [userId];
+
+    if (category) {
+      const categoryList = category.split(",").map(cat => cat.trim());
+      const placeholders = categoryList.map(() => `c.name LIKE ?`).join(" OR ");
+      whereClauses.push(`(${placeholders})`);
+      categoryList.forEach(cat => queryParams.push(`%${cat}%`));
+    }
+
+    if (search) {
+      whereClauses.push(`b.title LIKE ?`);
+      queryParams.push(`%${search}%`);
+    }
+
+    const whereClause = ` WHERE ${whereClauses.join(" AND ")}`;
+
+    // ✅ Count total
+    const [countResult] = await db.query(countQuery + whereClause, queryParams);
+    const totalItems = countResult[0]?.total || 0;
+
+    // ✅ Fetch books
+    const [books] = await db.query(
+      `${baseQuery}${whereClause} ORDER BY b.created_at DESC LIMIT ? OFFSET ?`,
+      [...queryParams, parsedLimit, offset]
+    );
+
+    const response = {
+      data: books,
+      pagination: {
+        current_page: parsedPage,
+        total_pages: Math.ceil(totalItems / parsedLimit),
+        total_items: totalItems,
+      },
+    };
+
+    return ApiResponse.success(res, response, 200, "Books fetched successfully");
   } catch (err) {
-    logger.error(`❌ Failed to get user favorites: ${err.message}`);
-    return ApiResponse.error(res, 'Server error', 500, 'error');
+    logger.error(`❌ Failed to fetch user favorites: ${err.message}`);
+    return ApiResponse.error(res, "Server error", 500, "error");
   }
-}
+};
+

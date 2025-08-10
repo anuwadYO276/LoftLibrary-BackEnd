@@ -10,5 +10,5 @@ import {
 router.post("/book", getTransactionBookHistoryPurchase);
 router.post("/episode", getTransactionEpisodeHistoryPurchase);
 router.post("/favorites", updateFavorites);
-router.get("/:id", getUserFavorites);
+router.get("/", getUserFavorites)
 export default router
