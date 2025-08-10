@@ -38,13 +38,19 @@ export const searchBooks = async (req, res) => {
     }
 
     let baseQuery = `
-      SELECT DISTINCT b.*
+      SELECT DISTINCT 
+          b.*, 
+          (SELECT COUNT(*) FROM ratings r WHERE r.book_id = b.id) AS rating_count,
+          (SELECT AVG(rating) FROM ratings r WHERE r.book_id = b.id) AS avg_rating
       FROM books b
       LEFT JOIN book_categories bc ON b.id = bc.book_id
       LEFT JOIN categories c ON bc.category_id = c.id
     `;
     let countQuery = `
-      SELECT COUNT(DISTINCT b.id) AS total
+      SELECT DISTINCT 
+          b.*, 
+          (SELECT COUNT(*) FROM ratings r WHERE r.book_id = b.id) AS rating_count,
+          (SELECT AVG(rating) FROM ratings r WHERE r.book_id = b.id) AS avg_rating
       FROM books b
       LEFT JOIN book_categories bc ON b.id = bc.book_id
       LEFT JOIN categories c ON bc.category_id = c.id
@@ -53,11 +59,15 @@ export const searchBooks = async (req, res) => {
     let whereClauses = [];
     let queryParams = [];
 
+    // ✅ รองรับหลาย category คั่นด้วย comma
     if (category) {
-      whereClauses.push(`c.name LIKE ?`);
-      queryParams.push(`%${category}%`);
+      const categoryList = category.split(",").map(cat => cat.trim());
+      const placeholders = categoryList.map(() => `c.name LIKE ?`).join(" OR ");
+      whereClauses.push(`(${placeholders})`);
+      categoryList.forEach(cat => queryParams.push(`%${cat}%`));
     }
 
+    // ✅ ค้นหาจาก title
     if (search) {
       whereClauses.push(`b.title LIKE ?`);
       queryParams.push(`%${search}%`);
@@ -65,9 +75,11 @@ export const searchBooks = async (req, res) => {
 
     const whereClause = whereClauses.length > 0 ? ` WHERE ` + whereClauses.join(" AND ") : "";
 
+    // ✅ ดึงจำนวนทั้งหมด
     const [countResult] = await db.query(countQuery + whereClause, queryParams);
     const totalItems = countResult[0]?.total || 0;
 
+    // ✅ ดึงข้อมูลหนังสือ
     const [books] = await db.query(
       `${baseQuery}${whereClause} ORDER BY b.created_at DESC LIMIT ? OFFSET ?`,
       [...queryParams, parsedLimit, offset]
@@ -83,11 +95,13 @@ export const searchBooks = async (req, res) => {
     };
 
     return ApiResponse.success(res, response, 200, "Books fetched successfully");
+
   } catch (err) {
     logger.error(`❌ Failed to search books: ${err.message}`);
     return ApiResponse.error(res, "Server error", 500, "error");
   }
 };
+
 
 export const updateBooks = async (req, res) => {
   try {
@@ -185,12 +199,12 @@ export const updateBookComplete = async (req, res) => {
 
 export const searchBooksId = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id, userId } = req.params;
     if (!id) {
       return ApiResponse.error(res, 'Book ID is required', 400, 'error');
     }
-    
-    const [rows] = await db.query(constantBook.getBookByIdQuery, [id]);
+
+    const [rows] = await db.query(constantBook.getBookByIdQuery, [id, userId]);
     if (rows.length === 0) {
       return ApiResponse.error(res, 'Book not found', 404, 'error');
     }
