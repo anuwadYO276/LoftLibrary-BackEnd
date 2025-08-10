@@ -42,35 +42,55 @@ export const getEpisodeID = async (req, res) => {
         return ApiResponse.error(res, "Failed to fetch episode", 500, 'error');
     }
 }
-
 export const CreateEpisode = async (req, res) => {
-    try {
-        const { book_id, title, description } = req.body;
-        const episodeFile = req.files['episodes'][0];
+  try {
+    // ดึงข้อมูลจาก body
+    const { book_id, user_id, title, content, is_free, price, release_date, status } = req.body;
 
-        if (!episodeFile) {
-            return ApiResponse.error(res, "Episode file is required", 400, 'error');
-        }
-
-        const episodesFile = req.files?.episodes?.[0];
-        const episodes = episodesFile ? episodesFile.filename : user[0].episodes;
-
-        const query = constantEpisode.addEpisodeQuery;
-        const values = [book_id, title, description, episodes.filename];
-        const [result] = await db.query(query, values);
-
-        return ApiResponse.success(res, { id: result.insertId, message: "Episode created successfully" }, 201, 'success');
-    } catch (error) {
-        logger.error("Error creating episode:", error);
-        return ApiResponse.error(res, "Failed to create episode", 500, 'error');
+    if (!book_id || !user_id || !title || !content) {
+      return ApiResponse.error(res, "Book ID, User ID, Title, and Content are required", 400, 'error');
     }
+    // ดึงไฟล์ cover จาก req.files (ถ้ามี)
+    const coverFile = req.files?.cover?.[0];
+
+    // ถ้าไม่มีไฟล์ cover ส่ง error กลับ
+    if (!coverFile) {
+      return ApiResponse.error(res, "Cover file is required", 400, 'error');
+    }
+
+    // ตั้งชื่อไฟล์ cover ที่จะใช้เก็บในฐานข้อมูล
+    const cover = coverFile.filename;
+
+    // เตรียม query และค่าที่จะใส่
+    const query = constantEpisode.addEpisodeQuery;
+    const values = [
+      book_id,
+      user_id,
+      title,
+      content,
+      is_free ? 1 : 0,
+      price || 0,
+      cover,
+      release_date,
+      status || 'draft'
+    ];
+    // รัน query insert
+    const [result] = await db.query(query, values);
+
+    // ส่ง response สำเร็จพร้อม id ที่สร้าง
+    return ApiResponse.success(res, { id: result.insertId, message: "Episode created successfully" }, 201, 'success');
+  } catch (error) {
+    logger.error("Error creating episode:", error);
+    return ApiResponse.error(res, "Failed to create episode", 500, 'error');
+  }
 }
+
 
 export const UpdateEpisode = async (req, res) => {
     try {
         const { EpisodeId } = req.params;
         const { title, description } = req.body;
-        const episodeFile = req.files?.['episodes']?.[0];
+        const episodeFile = req.files?.['cover']?.[0];
 
         let episodes;
 

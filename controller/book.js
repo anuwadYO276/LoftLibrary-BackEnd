@@ -185,10 +185,15 @@ export const getBookMy = async (req, res) => {
 
 export const updateBookComplete = async (req, res) => {
   try {
-    const { bookId, isComplete } = req.body;
+    let { bookId, isComplete } = req.body;
     if (!bookId || isComplete === undefined) {
       return ApiResponse.error(res, 'Book ID and completion status are required', 400, 'error');
     }
+    if(isComplete == true || isComplete == false) {
+      isComplete = isComplete ? 1 : 0; // Convert boolean to integer for
+    }
+      // database storage
+    console.log('Updating book completion status:', bookId, isComplete);
     await db.query(constantBook.updateBookCompleteQuery, [isComplete, bookId]);
     return ApiResponse.success(res, { message: 'Book completion status updated successfully' }, 200, 'success');
   } catch (err) {
@@ -212,6 +217,12 @@ export const searchBooksId = async (req, res) => {
     // get category
     const [categoryRows] = await db.query('SELECT c.id, c.name FROM categories c JOIN book_categories bc ON c.id = bc.category_id WHERE bc.book_id = ?', [id]);
     rows[0].categories = categoryRows;
+
+    // get episodes
+    const [episodesRows] = await db.query('SELECT * FROM episodes WHERE book_id = ?', [id]);
+    rows[0].episodes = episodesRows;
+    
+
 
     return ApiResponse.success(res, rows[0], 200, 'Book retrieved successfully');
   } catch (err) {

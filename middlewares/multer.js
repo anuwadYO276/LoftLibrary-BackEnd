@@ -23,7 +23,7 @@ const storage = multer.diskStorage({
     }else if (url.includes("/api/books")) {
       destFolder = "books";
     }else if (url.includes("/api/episodes")) {
-      destFolder = "episodes";
+      destFolder = "cover";
     }
 
     const uploadPath = path.join(rootUploadDir, destFolder);

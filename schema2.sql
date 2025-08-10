@@ -38,7 +38,7 @@ CREATE TABLE episodes (
   content TEXT,
   is_free BOOLEAN DEFAULT FALSE,
   price INT DEFAULT 1,
-  episodes_image VARCHAR(255),
+  cover VARCHAR(255),
   release_date DATE,
   status ENUM('draft', 'published', 'archived') NOT NULL DEFAULT 'draft',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
