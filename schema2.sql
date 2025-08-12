@@ -17,6 +17,8 @@ CREATE TABLE books (
   description TEXT,
   is_complete BOOLEAN DEFAULT FALSE,
   cover_image VARCHAR(255),
+  release_date DATE,
+  status ENUM('draft', 'published', 'archived') NOT NULL DEFAULT 'draft',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -39,8 +41,10 @@ CREATE TABLE episodes (
   is_free BOOLEAN DEFAULT FALSE,
   price INT DEFAULT 1,
   cover VARCHAR(255),
+  priority INT DEFAULT 1,
   release_date DATE,
   status ENUM('draft', 'published', 'archived') NOT NULL DEFAULT 'draft',
+  audio_id INT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -83,4 +87,14 @@ CREATE TABLE checkins (
   user_id INT NOT NULL,
   checkin_date DATE NOT NULL,
   UNIQUE KEY unique_user_checkin (user_id, checkin_date)
+);
+
+CREATE TABLE audio_tasks (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  episodes_id INT NOT NULL,
+  status ENUM('pending', 'processing', 'done', 'error') DEFAULT 'pending',
+  audio_url VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

@@ -59,6 +59,12 @@ export const searchBooks = async (req, res) => {
     let whereClauses = [];
     let queryParams = [];
 
+    // เพิ่มเงื่อนไขการค้นหา  books เช็คว่า status ต้องเท่ากับ published และ  release_date ต้องมากกว่าหรือเท่ากับวันนี้
+    const today = new Date().toISOString().split('T')[0];
+
+    whereClauses.push(`b.status = 'published' AND b.release_date <= ?`);
+    queryParams.push(today);
+
     // ✅ รองรับหลาย category คั่นด้วย comma
     if (category) {
       const categoryList = category.split(",").map(cat => cat.trim());
@@ -105,10 +111,10 @@ export const searchBooks = async (req, res) => {
 
 export const updateBooks = async (req, res) => {
   try {
-    const { bookId, title, userId, description, category } = req.body;
+    const { bookId, title, userId, description, category, release_date, status } = req.body;
 
-    if (!title || !userId || !description || !category) {
-      return ApiResponse.error(res, 'Title, User ID, Description and Category are required', 400, 'error');
+    if (!title || !userId || !description || !category || !release_date || !status) {
+      return ApiResponse.error(res, 'Title, User ID, Description, Category, Release Date and Status are required', 400, 'error');
     }
 
     const booksFile = req.files?.books?.[0];
@@ -141,12 +147,12 @@ export const updateBooks = async (req, res) => {
         }
         await db.query('INSERT INTO book_categories (book_id, category_id) VALUES (?, ?)', [bookId, catResult[0].id]);
       }
-      await db.query(constantBook.updateBookQuery, [title, userId, description, books, bookId]);
+      await db.query(constantBook.updateBookQuery, [title, userId, description, books, release_date, status, bookId]);
       return ApiResponse.success(res, { bookId: bookId }, 200, 'Book updated successfully');
     } else {
       // ➕ กรณีเพิ่มหนังสือใหม่
       const books = booksFile ? booksFile.filename : null;
-      let bookDataId = await db.query(constantBook.addBookQuery, [title, userId, description, books]);
+      let bookDataId = await db.query(constantBook.addBookQuery, [title, userId, description, books, release_date, status]);
       // เพิ่มหนังสือ category
       const categoryIds = category.split(',').map(cat => cat.trim());
       for (const catId of categoryIds) {
