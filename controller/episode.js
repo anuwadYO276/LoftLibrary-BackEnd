@@ -53,7 +53,7 @@ export const CreateEpisode = async (req, res) => {
 
     // ตั้งชื่อไฟล์ cover ที่จะใช้เก็บในฐานข้อมูล
     const cover = coverFile.filename;
-    const set_is_free = false;
+    let  set_is_free = false;
     if(price == 0) {
       set_is_free = true;
     }

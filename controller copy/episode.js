@@ -67,13 +67,13 @@ export const getEpisodeID = async (req, res) => {
 }
 export const CreateEpisode = async (req, res) => {
     try {
-        const { title, content_text, book_id, release_date, status, price } = req.body;
+        const { title, constant, book_id, release_date, status, price } = req.body;
         const cover_url = req.files.cover ? `/uploads/episode_images/${req.files.cover[0].filename}` : null;
         const audio_url = req.files.audio ? `/uploads/episode_audio/${req.files.audio[0].filename}` : null;
         const file_url = req.files.file ? `/uploads/episode_documents/${req.files.file[0].filename}` : null;
 
         const [result] = await db.query(constantEpisode.CreateEpisode, [
-            book_id, title, content_text, cover_url, audio_url, file_url, release_date, status, price
+            book_id, title, constant, cover_url, audio_url, file_url, release_date, status, price
         ]);
         if (result.affectedRows === 0) {
             let set_res = {
