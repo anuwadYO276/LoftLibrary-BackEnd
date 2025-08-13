@@ -61,29 +61,29 @@ export const CreateEpisode = async (req, res) => {
 
     // call API bot noi เพื่อแปลง เนื้อหาเป็นเสียง (content)
     // const audioResponse = await callBotNoiAPI(content);
-    return ApiResponse.success(res,'', 201, 'success');
+    // return ApiResponse.success(res,'', 201, 'success');
 
-    // // เตรียม query และค่าที่จะใส่
-    // const query = constantEpisode.addEpisodeQuery;
-    // const values = [
-    //   book_id,
-    //   user_id,
-    //   title,
-    //   content,
-    //   set_is_free,
-    //   price || 0,
-    //   cover,
-    //   release_date,
-    //   status || 'draft',
-    //   priority || 1
-    // ];
+    // เตรียม query และค่าที่จะใส่
+    const query = constantEpisode.addEpisodeQuery;
+    const values = [
+      book_id,
+      user_id,
+      title,
+      content,
+      set_is_free,
+      price || 0,
+      cover,
+      release_date,
+      status || 'draft',
+      priority || 1
+    ];
 
 
-    // // รัน query insert
-    // const [result] = await db.query(query, values);
+    // รัน query insert
+    const [result] = await db.query(query, values);
 
-    // // ส่ง response สำเร็จพร้อม id ที่สร้าง
-    // return ApiResponse.success(res, { id: result.insertId, message: "Episode created successfully" }, 201, 'success');
+    // ส่ง response สำเร็จพร้อม id ที่สร้าง
+    return ApiResponse.success(res, { id: result.insertId, message: "Episode created successfully" }, 201, 'success');
   } catch (error) {
     logger.error("Error creating episode:", error);
     return ApiResponse.error(res, "Failed to create episode", 500, 'error');
@@ -136,7 +136,6 @@ export const callBotNoiAPI = async (req, res) => {
 
     // เรียก Bot Noi API
     const response = await axios.post(
-      // https://api-voice.botnoi.ai
       "https://api.botnoi.ai/openapi/v1/generate_audio",
       {
         text: content,
