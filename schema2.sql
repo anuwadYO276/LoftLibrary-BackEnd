@@ -98,3 +98,17 @@ CREATE TABLE audio_tasks (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+
+
+
+CREATE TABLE log_api_requests (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  api_endpoint VARCHAR(255) NOT NULL,
+  request_headers TEXT,
+  request_payload TEXT,
+  response_headers TEXT,
+  response_payload TEXT,
+  status INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
