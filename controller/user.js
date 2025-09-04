@@ -217,4 +217,68 @@ export const addUserUpdateHistory = async (req, res) => {
 };
 
 
+export const getTransactionBookPurchase = async (req, res) => {
+  try {
+    const { userId, bookId } = req.body;
 
+    if (!userId) {
+      return ApiResponse.error(res, "User ID is required", 400, "error");
+    }
+
+    let query = `  
+      select * 
+      from loft_library.episodes 
+      where book_id =?
+      and id not in (select episode_id 
+      from loft_library.purchases  
+      where 1=1
+      and user_id =?)
+    `;
+
+    const params = [bookId, userId];
+    const [purchases] = await db.query(query, params);
+
+    // count price
+    const totalPrice = purchases.reduce((acc, episode) => acc + episode.price, 0);
+    let data_response = {
+      purchases,
+      list_array_episode_id: purchases.map(ep => ep.id),
+      totalPrice
+    };
+    return ApiResponse.success(res, data_response, 200, "User book purchases fetched successfully");
+  } catch (err) {
+    logger.error(`❌ Failed to fetch user book purchases: ${err.message}`);
+    return ApiResponse.error(res, "Server error", 500, "error");
+  }
+};
+
+export const getAudio = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return ApiResponse.error(res, "User ID is required", 400, "error");
+    }
+
+    let query = `  
+      SELECT * 
+      FROM loft_library.episodes
+      WHERE id IN (
+          SELECT episode_id 
+          FROM (
+              SELECT episode_id
+              FROM loft_library.user_history 
+              WHERE episode_id IS NOT NULL
+                AND user_id = ?
+              ORDER BY viewed_at DESC
+              LIMIT 1
+          ) AS sub
+      );
+    `;
+    const params = [userId];
+    const [audioRows] = await db.query(query, params);
+    return ApiResponse.success(res, audioRows, 200, "Audio fetched successfully");
+  } catch (err) {
+    logger.error(`❌ Failed to fetch audio: ${err.message}`);
+    return ApiResponse.error(res, "Server error", 500, "error");
+  }
+};
