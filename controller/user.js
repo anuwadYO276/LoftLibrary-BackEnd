@@ -282,3 +282,97 @@ export const getAudio = async (req, res) => {
     return ApiResponse.error(res, "Server error", 500, "error");
   }
 };
+
+export const getUserNotification = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return ApiResponse.error(res, "User ID is required", 400, "error");
+    }
+
+    const [notifications] = await db.query(
+      `
+      SELECT 
+          t.id AS notify_id,
+          t.book_id,
+          b.title AS book_title,
+          t.episode_id,
+          e.title AS episode_title,
+          e.priority,
+          t.notify_type,
+          t.release_at,
+          t.created_at,
+          u.read_at,
+          u.cleared_at,
+          CASE 
+              WHEN t.notify_type = 'COMING_SOON' 
+                  THEN CONCAT('New episode "', e.title, '" of  "', b.title, '" is coming on ', DATE_FORMAT(t.release_at, '%d-%m-%Y'))
+              WHEN t.notify_type = 'AVAILABLE' 
+                  THEN CONCAT('New episode "', e.title, '" of  "', b.title, '" is now available to read!')
+              ELSE 'New episode update'
+          END AS notification_message
+      FROM transaction_new_episode t
+      JOIN favorites f 
+          ON f.book_id = t.book_id AND f.user_id = ?
+      JOIN episodes e
+          ON e.id = t.episode_id
+      JOIN books b
+          ON b.id = t.book_id
+      LEFT JOIN user_new_episode u 
+          ON u.episode_id = t.episode_id AND u.user_id = ?
+      WHERE 
+          (t.notify_type = 'COMING_SOON' 
+           OR (t.notify_type = 'AVAILABLE' AND (t.release_at IS NULL OR t.release_at <= NOW())))
+      ORDER BY t.created_at DESC;
+      `,
+      [userId, userId]
+    );
+
+    return ApiResponse.success(
+      res,
+      notifications,
+      200,
+      "User notifications fetched successfully"
+    );
+  } catch (err) {
+    logger.error(`❌ Failed to fetch user notifications: ${err.message}`);
+    return ApiResponse.error(res, "Failed to fetch user notifications", 500, "error");
+  }
+};
+
+export const activeUserNotification = async (req, res) => {
+  try {
+    const { userId, episodeId } = req.body;
+    if (!userId || !episodeId) {
+      return ApiResponse.error(res, "User ID and Episode ID are required", 400, "error");
+    }
+
+    // ตรวจสอบว่ามี record อยู่แล้วหรือยัง
+    const [rows] = await db.query(
+      `SELECT id FROM user_new_episode WHERE user_id = ? AND episode_id = ?`,
+      [userId, episodeId]
+    );
+
+    if (rows.length > 0) {
+      // ถ้ามีแล้ว → update read_at
+      await db.query(
+        `UPDATE user_new_episode 
+         SET read_at = NOW() 
+         WHERE user_id = ? AND episode_id = ?`,
+        [userId, episodeId]
+      );
+    } else {
+      // ถ้าไม่มี → insert ใหม่
+      await db.query(
+        `INSERT INTO user_new_episode (user_id, episode_id, read_at) 
+         VALUES (?, ?, NOW())`,
+        [userId, episodeId]
+      );
+    }
+
+    return ApiResponse.success(res, null, 200, "User notification marked as read successfully");
+  } catch (err) {
+    logger.error(`❌ Failed to mark user notification as read: ${err.message}`);
+    return ApiResponse.error(res, "Server error", 500, "error");
+  }
+};
