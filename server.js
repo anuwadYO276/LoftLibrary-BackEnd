@@ -23,6 +23,9 @@ const app = express()
 app.use(morgan("dev"))
 app.use(express.json())
 app.use(cors())
+// app.use(cors({
+//   origin: "https://<frontend-ngrok-url>"
+// }))
 
 // 👉 ให้ express เสิร์ฟไฟล์จาก /uploads
 app.use("/uploads", express.static("uploads"))
